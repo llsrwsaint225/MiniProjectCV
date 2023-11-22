@@ -2,7 +2,7 @@ import cv2
 import mediapipe as mp
 
 # Function to detect key presses on the virtual keyboard
-def detect_key_press(key, typed_text):
+def detect_key_press(key, typed_text, fingertip_pressed):
     global keyboard_layout
 
     if key in keyboard_layout:
@@ -12,6 +12,12 @@ def detect_key_press(key, typed_text):
             typed_text += key
         print(f"Typed: {typed_text}")
 
+    # Reset fingertip_pressed if Space or Enter is pressed
+    if key in ['Space', 'Enter']:
+        fingertip_pressed = False
+
+    return typed_text, fingertip_pressed
+
 # Function to get the key based on coordinates
 def get_key(x, y, keyboard_layout):
     for key, (key_x, key_y, key_w, key_h) in keyboard_layout.items():
@@ -19,6 +25,7 @@ def get_key(x, y, keyboard_layout):
             return key
     return None
 
+# Function to process webcam frames and detect the keyboard and hand
 # Function to process webcam frames and detect the keyboard and hand
 def process_webcam():
     global typed_text, keyboard_layout
@@ -57,18 +64,13 @@ def process_webcam():
 
                     # If a key is pressed and not in cooldown, update the typed text
                     if key_pressed and not fingertip_pressed and current_cooldown == 0:
-                        detect_key_press(key_pressed, typed_text)
-                        fingertip_pressed = True
+                        typed_text, fingertip_pressed = detect_key_press(key_pressed, typed_text, fingertip_pressed)
                         current_cooldown = cooldown_frames
                         cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)  # Highlight fingertip
 
         # Update cooldown
         if current_cooldown > 0:
             current_cooldown -= 1
-
-        # Reset fingertip_pressed if no fingertips are detected
-        if not results.multi_hand_landmarks:
-            fingertip_pressed = False
 
         # Draw the virtual keyboard
         for key, (x, y, w, h) in keyboard_layout.items():
@@ -80,7 +82,7 @@ def process_webcam():
             break
         elif key != -1 and key != 255:  # Check if any key is pressed
             key_char = chr(key).upper()  # Get the character representation of the key
-            detect_key_press(key_char, typed_text)
+            typed_text, fingertip_pressed = detect_key_press(key_char, typed_text, fingertip_pressed)
 
         # Display the frame
         cv2.imshow('Webcam', frame)
