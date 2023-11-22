@@ -10,6 +10,8 @@ def detect_key_press(key, typed_text, fingertip_pressed):
             typed_text = typed_text[:-1]  # Remove the last character
         elif key != 'Backspace' and key != 'Space':
             typed_text += key
+        elif key == 'Space':
+            typed_text += ' '
         print(f"Typed: {typed_text}")
 
     # Reset fingertip_pressed if Space or Enter is pressed
